@@ -190,7 +190,6 @@ input[type=range]:focus-visible{outline:2px solid var(--acc);outline-offset:-4px
 [data-theme=light] .tr.picked{background:#0a84ff22}
 #rail{visibility:hidden;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s,visibility 0s linear .22s}
 #rail.open{visibility:visible;transition:transform .22s cubic-bezier(.2,.8,.2,1),opacity .18s,visibility 0s}
-#adbar{display:none;flex:none;padding:0 12px 8px;max-height:72px;overflow:hidden}
 body{padding-bottom:var(--adh,0px)}
 .c.miss{opacity:.45;filter:grayscale(1)}
 .tr.miss{opacity:.55}
@@ -207,7 +206,6 @@ body{padding-bottom:var(--adh,0px)}
 <div class="bar"><span id="cur">0:00</span><input type="range" id="seek" min="0" max="1000" value="0"><span id="dur">0:00</span></div>
 <div class="ctl"><button id="prev" aria-label="Назад" data-ia="a_prev"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M6 6h2v12H6zM20 6v12L9.5 12z"/></svg></button><button id="pp" aria-label="Играть" data-ia="a_play"><svg viewBox="0 0 24 24" width="34" height="34" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></button><button id="next" aria-label="Вперёд" data-ia="a_next"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M16 6h2v12h-2zM4 6v12l10.5-6z"/></svg></button></div>
 <div class="volrow" id="volrow"><button id="mute" aria-label="Звук" data-ia="a_mute"></button><input type="range" id="vol" min="0" max="100" value="100"><span class="sr"><button class="mb" id="shuf" aria-label="Перемешать" data-ia="a_shuf"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/></svg></button><button class="mb" id="rep" aria-label="Повтор" data-ia="a_rep"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor"><path d="M7 7h10v3l4-4-4-4v3H5v6h2V7zm10 10H7v-3l-4 4 4 4v-3h12v-6h-2v4z"/></svg></button></span></div>
-<div id="adbar"></div>
 <input type="file" id="file" accept="audio/*,.mp3,.flac,.wav,.m4a,.aac,.ogg,.oga,.opus,.lrc" multiple hidden>
 <input type="file" id="imgfile" accept="image/*" hidden>
 <input type="file" id="plfile" accept="audio/*,.mp3,.flac,.wav,.m4a,.aac,.ogg,.oga,.opus,.lrc" multiple hidden>
@@ -1099,35 +1097,16 @@ function finishMove(p){
   toast(T(move?'t_mv':'t_cp',{n:ts.length}));
 }
 
-// ================= реклама Google =================
-// Настройки лежат в ads-config.js (по умолчанию тестовые идентификаторы Google).
+// ================= реклама Start.io (только Android) =================
+// Настройки лежат в ads-config.js (по умолчанию тестовый App ID Start.io).
 const ADS=window.ADS||{};
 function setAdH(h){document.documentElement.style.setProperty('--adh',(h||0)+'px')}
-async function adsNative(A){
-  try{
-    A.addListener('bannerAdSizeChanged',e=>setAdH(e&&e.height));
-    A.addListener('bannerAdFailedToLoad',()=>setAdH(0));
-    await A.initialize({initializeForTesting:!!ADS.testing});
-    try{const i=await A.requestConsentInfo();if(i&&i.isConsentFormAvailable&&i.status==='REQUIRED')await A.showConsentForm()}catch(e){}
-    await A.showBanner({adId:ADS.admobBanner,adSize:'ADAPTIVE_BANNER',position:'BOTTOM_CENTER',margin:0,isTesting:!!ADS.testing});
-  }catch(e){}
-}
-function adsWeb(){
-  const bar=$('adbar');bar.style.display='block';
-  const sc=document.createElement('script');sc.async=true;sc.crossOrigin='anonymous';
-  sc.src='https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client='+encodeURIComponent(ADS.adsenseClient);
-  const ins=document.createElement('ins');ins.className='adsbygoogle';
-  ins.style.cssText='display:block;width:100%;height:60px';
-  ins.dataset.adClient=ADS.adsenseClient;ins.dataset.adSlot=ADS.adsenseSlot;ins.dataset.adFormat='horizontal';ins.dataset.fullWidthResponsive='true';
-  bar.appendChild(ins);
-  sc.onload=()=>{try{(window.adsbygoogle=window.adsbygoogle||[]).push({})}catch(e){}};
-  document.head.appendChild(sc);
-}
 function adsInit(){
   if(ADS.enabled===false)return;
-  let A=null;try{A=NATIVE&&Capacitor.Plugins&&Capacitor.Plugins.AdMob}catch(e){}
-  if(A&&ADS.admobBanner)adsNative(A);
-  else if(!NATIVE&&/^https?:$/.test(location.protocol)&&ADS.adsenseClient&&ADS.adsenseSlot)adsWeb();
+  let A=null;try{A=NATIVE&&Capacitor.Plugins&&Capacitor.Plugins.StartIo}catch(e){}
+  if(!A)return;
+  try{A.addListener('bannerSize',e=>setAdH(e&&e.height))}catch(e){}
+  try{A.show({testing:!!ADS.testing}).catch(()=>{})}catch(e){}
 }
 
 // ================= резервная копия (экспорт / импорт) =================
